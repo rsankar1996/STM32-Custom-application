@@ -52,7 +52,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
-
+static void flash_invoke_application(uint32_t app_address);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -67,7 +67,7 @@ static void MX_USART1_UART_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
+  uint32_t flash_app_address = (uint32_t)0x08010000;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -90,7 +90,7 @@ int main(void)
   MX_GPIO_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-
+  flash_invoke_application(flash_app_address);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -204,7 +204,25 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+static void flash_invoke_application(uint32_t app_address)
+{
+	uint32_t msp_value = 0;
+	void (*app_reset_handler)(void);
 
+	SysTick->CTRL = 0;
+	SysTick->LOAD = 0;
+	SysTick->VAL = 0;
+
+	/* Disable all peripherals*/
+	HAL_DeInit();
+
+	msp_value = *(__IO uint32_t*)app_address;
+	__set_MSP(msp_value);
+	uint32_t resethandler_address = *(__IO uint32_t*)(app_address + 0x4);
+	app_reset_handler = (void*) resethandler_address;
+
+	app_reset_handler();
+}
 /* USER CODE END 4 */
 
 /**
